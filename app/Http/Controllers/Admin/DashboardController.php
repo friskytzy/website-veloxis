@@ -28,7 +28,7 @@ class DashboardController extends Controller
             ],
             'news' => News::count(),
             'events' => Event::count(),
-            'recent_orders' => Order::latest()->take(5)->get(),
+            'recent_orders' => Order::with('user')->latest()->take(5)->get(),
             'low_stock_spareparts' => SparePart::lowStock()->active()->orderBy('stock')->take(8)->get(),
         ];
         

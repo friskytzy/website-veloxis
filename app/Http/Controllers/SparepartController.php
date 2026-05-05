@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\InsufficientStockException;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SparePart;
@@ -165,70 +166,67 @@ class SparepartController extends Controller
             ]);
         }
 
-        $stockError = null;
-        $order = DB::transaction(function () use ($request, $items, &$stockError): ?Order {
-            $paymentMethod = $request->string('payment_method')->toString();
-            $paymentProvider = config('veloxis.payments.'.$paymentMethod.'.provider', 'manual');
+        try {
+            $order = DB::transaction(function () use ($request, $items): Order {
+                $paymentMethod = $request->string('payment_method')->toString();
+                $paymentProvider = config('veloxis.payments.'.$paymentMethod.'.provider', 'manual');
 
-            $lockedParts = [];
-            $subtotal = 0;
-            foreach ($items as $item) {
-                $part = SparePart::active()->where('slug', $item['slug'])->lockForUpdate()->first();
-                if (!$part || $part->stock < $item['quantity']) {
-                    $stockError = "Stok {$item['name']} tidak mencukupi. Tersedia: ".($part ? $part->stock : 0);
+                $lockedParts = [];
+                $subtotal = 0;
+                foreach ($items as $item) {
+                    $part = SparePart::active()->where('slug', $item['slug'])->lockForUpdate()->first();
+                    if (!$part || $part->stock < $item['quantity']) {
+                        throw new InsufficientStockException("Stok {$item['name']} tidak mencukupi. Tersedia: ".($part ? $part->stock : 0));
+                    }
 
-                    return null;
+                    $lockedParts[$item['slug']] = $part;
+                    $subtotal += $part->price * $item['quantity'];
                 }
 
-                $lockedParts[$item['slug']] = $part;
-                $subtotal += $part->price * $item['quantity'];
-            }
+                $shipping = $this->shippingCost($subtotal, $request->string('courier')->toString());
+                $discount = $subtotal >= 750000 ? 50000 : 0;
 
-            $shipping = $this->shippingCost($subtotal, $request->string('courier')->toString());
-            $discount = $subtotal >= 750000 ? 50000 : 0;
-
-            $order = Order::create([
-                'user_id' => auth()->id(),
-                'order_number' => OrderNumber::generate(),
-                'customer_name' => $request->string('name')->toString(),
-                'total' => max($subtotal + $shipping - $discount, 0),
-                'status' => 'pending',
-                'address' => $request->string('address')->toString(),
-                'city' => $request->string('city')->toString(),
-                'postal_code' => $request->string('postal_code')->toString() ?: null,
-                'phone' => $request->string('phone')->toString(),
-                'email' => $request->string('email')->toString(),
-                'courier' => $request->string('courier')->toString(),
-                'subtotal' => $subtotal,
-                'shipping_cost' => $shipping,
-                'discount' => $discount,
-                'payment_method' => $paymentMethod,
-                'payment_provider' => $paymentProvider,
-                'payment_status' => $paymentMethod === 'COD' ? 'cod_pending' : 'waiting_payment',
-                'notes' => $request->string('notes')->toString() ?: null,
-            ]);
-
-            foreach ($items as $item) {
-                $part = $lockedParts[$item['slug']];
-
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $part->id,
-                    'product_type' => SparePart::class,
-                    'product_name' => $part->name,
-                    'quantity' => $item['quantity'],
-                    'price' => $part->price,
+                $order = Order::create([
+                    'user_id' => auth()->id(),
+                    'order_number' => OrderNumber::generate(),
+                    'customer_name' => $request->string('name')->toString(),
+                    'total' => max($subtotal + $shipping - $discount, 0),
+                    'status' => 'pending',
+                    'address' => $request->string('address')->toString(),
+                    'city' => $request->string('city')->toString(),
+                    'postal_code' => $request->string('postal_code')->toString() ?: null,
+                    'phone' => $request->string('phone')->toString(),
+                    'email' => $request->string('email')->toString(),
+                    'courier' => $request->string('courier')->toString(),
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shipping,
+                    'discount' => $discount,
+                    'payment_method' => $paymentMethod,
+                    'payment_provider' => $paymentProvider,
+                    'payment_status' => $paymentMethod === 'COD' ? 'cod_pending' : 'waiting_payment',
+                    'notes' => $request->string('notes')->toString() ?: null,
                 ]);
 
-                $part->decrement('stock', $item['quantity']);
-            }
+                foreach ($items as $item) {
+                    $part = $lockedParts[$item['slug']];
 
-            return $order;
-        });
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $part->id,
+                        'product_type' => SparePart::class,
+                        'product_name' => $part->name,
+                        'quantity' => $item['quantity'],
+                        'price' => $part->price,
+                    ]);
 
-        if (!$order) {
+                    $part->decrement('stock', $item['quantity']);
+                }
+
+                return $order;
+            });
+        } catch (InsufficientStockException $exception) {
             return redirect()->route('veloxis.cart')->withErrors([
-                'quantity' => $stockError ?? 'Stok produk tidak mencukupi.',
+                'quantity' => $exception->getMessage(),
             ]);
         }
 

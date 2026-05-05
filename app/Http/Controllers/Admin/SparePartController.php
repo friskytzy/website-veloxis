@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\SparePart;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
@@ -81,11 +82,14 @@ class SparePartController extends Controller
 
     private function validated(Request $request, ?SparePart $sparePart = null): array
     {
-        $ignoreId = $sparePart && $sparePart->id ? ','.$sparePart->id : '';
-
         return $request->validate([
             'name' => ['required', 'string', 'max:180'],
-            'sku' => ['required', 'string', 'max:80', 'unique:spare_parts,sku'.$ignoreId],
+            'sku' => [
+                'required',
+                'string',
+                'max:80',
+                Rule::unique('spare_parts', 'sku')->ignore($sparePart),
+            ],
             'category' => ['required', 'string', 'max:80'],
             'part_brand' => ['required', 'string', 'max:80'],
             'motor_brand' => ['required', 'string', 'max:80'],
