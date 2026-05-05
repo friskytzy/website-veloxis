@@ -9,6 +9,8 @@ use App\Models\Cart;
 use App\Models\Bike;
 use App\Models\Gear;
 use App\Http\Requests\OrderStoreRequest;
+use App\Support\OrderNumber;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
@@ -74,45 +76,46 @@ class OrderController extends Controller
             }
         }
 
-        // Create order
-        $order = Order::create([
-            'user_id' => $userId,
-            'order_number' => 'VLX-'.now()->format('Ymd').'-'.str_pad((string) (Order::count() + 1), 5, '0', STR_PAD_LEFT),
-            'total' => $total,
-            'status' => 'pending',
-            'address' => $validated['shipping_address'],
-            'phone' => $validated['shipping_phone'],
-            'customer_name' => $validated['shipping_name'],
-            'payment_method' => $validated['payment_method'],
-            'payment_provider' => 'manual',
-            'payment_status' => $validated['payment_method'] === 'cod' ? 'cod_pending' : 'waiting_payment',
-            'notes' => $validated['notes'] ?? null,
-        ]);
+        $order = DB::transaction(function () use ($validated, $items, $total, $userId): Order {
+            $order = Order::create([
+                'user_id' => $userId,
+                'order_number' => OrderNumber::generate(),
+                'total' => $total,
+                'status' => 'pending',
+                'address' => $validated['shipping_address'],
+                'phone' => $validated['shipping_phone'],
+                'customer_name' => $validated['shipping_name'],
+                'payment_method' => $validated['payment_method'],
+                'payment_provider' => 'manual',
+                'payment_status' => $validated['payment_method'] === 'cod' ? 'cod_pending' : 'waiting_payment',
+                'notes' => $validated['notes'] ?? null,
+            ]);
 
-        // Create order items and update stock
-        foreach ($items as $item) {
-            if ($item['product_type'] === 'bike') {
-                $product = Bike::find($item['product_id']);
-            } else {
-                $product = Gear::find($item['product_id']);
+            foreach ($items as $item) {
+                if ($item['product_type'] === 'bike') {
+                    $product = Bike::find($item['product_id']);
+                } else {
+                    $product = Gear::find($item['product_id']);
+                }
+
+                if ($product) {
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $item['product_id'],
+                        'product_type' => $item['product_type'],
+                        'product_name' => $product->name,
+                        'quantity' => $item['quantity'],
+                        'price' => $product->price,
+                    ]);
+
+                    $product->update([
+                        'stock' => $product->stock - $item['quantity']
+                    ]);
+                }
             }
-            
-            if ($product) {
-                OrderItem::create([
-                    'order_id' => $order->id,
-                    'product_id' => $item['product_id'],
-                    'product_type' => $item['product_type'],
-                    'product_name' => $product->name,
-                    'quantity' => $item['quantity'],
-                    'price' => $product->price,
-                ]);
-                
-                // Update stock
-                $product->update([
-                    'stock' => $product->stock - $item['quantity']
-                ]);
-            }
-        }
+
+            return $order;
+        });
 
         // Clear cart
         Cart::where('user_id', $userId)->delete();

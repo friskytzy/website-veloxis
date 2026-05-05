@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SparePart;
+use App\Support\OrderNumber;
 use App\Support\VeloxisCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -37,7 +38,6 @@ class SparepartController extends Controller
         $product = VeloxisCatalog::findProduct($slug);
 
         abort_if(!$product, 404);
-        abort_if($product['stock'] < 1, 422);
 
         $relatedProducts = collect(VeloxisCatalog::filteredProducts([]))
             ->filter(fn (array $item): bool => $item['slug'] !== $slug && ($item['category'] === $product['category'] || $item['motor_brand'] === $product['motor_brand']))
@@ -75,6 +75,11 @@ class SparepartController extends Controller
         $requestedQuantity = (int) ($validated['quantity'] ?? 1);
         $cart = session('veloxis_cart', []);
         $cart[$slug] = min(($cart[$slug] ?? 0) + $requestedQuantity, 10, $product['stock']);
+
+        if ($cart[$slug] < 1) {
+            unset($cart[$slug]);
+        }
+
         session(['veloxis_cart' => $cart]);
     }
 
@@ -171,7 +176,7 @@ class SparepartController extends Controller
 
             $order = Order::create([
                 'user_id' => auth()->id(),
-                'order_number' => 'VLX-'.now()->format('Ymd').'-'.str_pad((string) (Order::count() + 1), 5, '0', STR_PAD_LEFT),
+                'order_number' => OrderNumber::generate(),
                 'customer_name' => $request->string('name')->toString(),
                 'total' => max($subtotal + $shipping - $discount, 0),
                 'status' => 'pending',
