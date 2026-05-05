@@ -43,6 +43,20 @@ class SparepartController extends Controller
 
     public function addToCart(Request $request, string $slug): RedirectResponse
     {
+        $this->storeCartItem($request, $slug);
+
+        return redirect()->route('veloxis.cart')->with('success', 'Produk berhasil ditambahkan ke keranjang.');
+    }
+
+    public function buyNow(Request $request, string $slug): RedirectResponse
+    {
+        $this->storeCartItem($request, $slug);
+
+        return redirect()->route('veloxis.checkout')->with('success', 'Produk siap checkout.');
+    }
+
+    private function storeCartItem(Request $request, string $slug): void
+    {
         $product = VeloxisCatalog::findProduct($slug);
 
         abort_if(!$product, 404);
@@ -54,8 +68,6 @@ class SparepartController extends Controller
         $cart = session('veloxis_cart', []);
         $cart[$slug] = min(($cart[$slug] ?? 0) + (int) ($validated['quantity'] ?? 1), 10);
         session(['veloxis_cart' => $cart]);
-
-        return redirect()->route('veloxis.cart')->with('success', 'Produk berhasil ditambahkan ke keranjang.');
     }
 
     public function cart(): View

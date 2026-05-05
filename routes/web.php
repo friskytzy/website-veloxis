@@ -35,6 +35,7 @@ Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::get('/sparepart', [SparepartController::class, 'index'])->name('veloxis.spareparts');
 Route::get('/produk/{slug}', [SparepartController::class, 'show'])->name('veloxis.spareparts.show');
 Route::post('/keranjang/{slug}', [SparepartController::class, 'addToCart'])->name('veloxis.cart.add');
+Route::post('/beli-sekarang/{slug}', [SparepartController::class, 'buyNow'])->name('veloxis.buy-now');
 Route::get('/keranjang', [SparepartController::class, 'cart'])->name('veloxis.cart');
 Route::put('/keranjang/{slug}', [SparepartController::class, 'updateCart'])->name('veloxis.cart.update');
 Route::get('/checkout', [SparepartController::class, 'checkout'])->name('veloxis.checkout');

@@ -64,15 +64,16 @@
                 <div class="rounded-2xl bg-white p-4 text-sm font-bold shadow-sm"><i class="fas fa-truck mr-2 text-veloxis-red"></i>Free shipping*</div>
             </div>
 
-            <form action="{{ route('veloxis.cart.add', $product['slug']) }}" method="POST" class="mt-7 rounded-3xl bg-white p-5 shadow-sm">
-                @csrf
+            <div class="mt-7 rounded-3xl bg-white p-5 shadow-sm">
                 <label for="quantity" class="mb-2 block font-bold text-slate-700">Quantity</label>
-                <div class="flex flex-col gap-3 sm:flex-row">
-                    <input id="quantity" name="quantity" type="number" min="1" max="10" value="1" class="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-veloxis-red focus:ring-4 focus:ring-red-100 sm:w-28">
-                    <button class="flex-1 rounded-2xl bg-veloxis-red px-6 py-4 font-black text-white hover:bg-red-700">Add to Cart</button>
-                    <a href="{{ route('veloxis.checkout') }}" class="flex-1 rounded-2xl bg-veloxis-navy px-6 py-4 text-center font-black text-white hover:bg-veloxis-dark">Buy Now</a>
+                <div class="grid gap-3 sm:grid-cols-[112px_1fr_1fr]">
+                    <input id="quantity" form="add-cart-form" name="quantity" type="number" min="1" max="10" value="1" class="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-veloxis-red focus:ring-4 focus:ring-red-100">
+                    <button form="add-cart-form" class="rounded-2xl bg-veloxis-red px-6 py-4 font-black text-white hover:bg-red-700">Add to Cart</button>
+                    <button form="buy-now-form" class="rounded-2xl bg-veloxis-navy px-6 py-4 font-black text-white hover:bg-veloxis-dark">Buy Now</button>
                 </div>
-            </form>
+            </div>
+            <form id="add-cart-form" action="{{ route('veloxis.cart.add', $product['slug']) }}" method="POST">@csrf</form>
+            <form id="buy-now-form" action="{{ route('veloxis.buy-now', $product['slug']) }}" method="POST">@csrf</form>
 
             <div class="mt-7 rounded-3xl bg-white p-5 shadow-sm">
                 <h2 class="mb-3 font-black text-veloxis-navy">Spesifikasi</h2>
