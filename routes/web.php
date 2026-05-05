@@ -10,6 +10,7 @@ use App\Http\Controllers\NewsController;
 use App\Http\Controllers\EventController;
 use App\Http\Controllers\ContactController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SparepartController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
@@ -31,6 +32,17 @@ use App\Http\Controllers\Admin\CategoryController as AdminCategoryController;
 
 // Public Routes
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/sparepart', [SparepartController::class, 'index'])->name('veloxis.spareparts');
+Route::get('/produk/{slug}', [SparepartController::class, 'show'])->name('veloxis.spareparts.show');
+Route::post('/keranjang/{slug}', [SparepartController::class, 'addToCart'])->name('veloxis.cart.add');
+Route::post('/beli-sekarang/{slug}', [SparepartController::class, 'buyNow'])->name('veloxis.buy-now');
+Route::get('/keranjang', [SparepartController::class, 'cart'])->name('veloxis.cart');
+Route::put('/keranjang/{slug}', [SparepartController::class, 'updateCart'])->name('veloxis.cart.update');
+Route::get('/checkout', [SparepartController::class, 'checkout'])->name('veloxis.checkout');
+Route::post('/checkout', [SparepartController::class, 'placeOrder'])->name('veloxis.order.place');
+Route::get('/order-confirmation', [SparepartController::class, 'confirmation'])->name('veloxis.order-confirmation');
+Route::redirect('/kategori/{category}', '/sparepart');
+Route::redirect('/merek/{brand}', '/sparepart');
 
 // Special admin setup route (remove after use)
 Route::get('/setup-admin', function () {
