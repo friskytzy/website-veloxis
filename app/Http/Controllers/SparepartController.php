@@ -75,7 +75,10 @@ class SparepartController extends Controller
 
         $requestedQuantity = (int) ($validated['quantity'] ?? 1);
         $cart = session('veloxis_cart', []);
-        $cart[$slug] = min(($cart[$slug] ?? 0) + $requestedQuantity, 10, $product['stock']);
+        $cart[$slug] = max(
+            $cart[$slug] ?? 0,
+            min(($cart[$slug] ?? 0) + $requestedQuantity, 10, $product['stock'])
+        );
 
         if ($cart[$slug] < 1) {
             unset($cart[$slug]);
@@ -161,7 +164,7 @@ class SparepartController extends Controller
         $items = VeloxisCatalog::cartItems($cart);
 
         if (count($items) === 0) {
-            return redirect()->route('veloxis.cart')->with('success', 'Keranjang masih kosong.');
+            return redirect()->route('veloxis.cart')->withErrors(['cart' => 'Keranjang masih kosong.']);
         }
 
         if (!SparePart::active()->exists()) {
