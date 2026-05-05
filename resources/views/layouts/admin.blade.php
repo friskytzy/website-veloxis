@@ -178,15 +178,16 @@
                         </a>
                         
                         <div class="sb-sidenav-menu-heading">Katalog</div>
-                        <a class="nav-link collapsed {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="#" data-bs-toggle="collapse" data-bs-target="#collapseProducts" aria-expanded="false" aria-controls="collapseProducts">
+                        <a class="nav-link collapsed {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.spareparts.*') ? 'active' : '' }}" href="#" data-bs-toggle="collapse" data-bs-target="#collapseProducts" aria-expanded="false" aria-controls="collapseProducts">
                             <div class="sb-nav-link-icon"><i class="fas fa-bicycle"></i></div>
                             Produk
                             <div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
                         </a>
-                        <div class="collapse {{ request()->routeIs('admin.products.*') ? 'show' : '' }}" id="collapseProducts" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
+                        <div class="collapse {{ request()->routeIs('admin.products.*') || request()->routeIs('admin.spareparts.*') ? 'show' : '' }}" id="collapseProducts" aria-labelledby="headingOne" data-bs-parent="#sidenavAccordion">
                             <nav class="sb-sidenav-menu-nested nav">
                                 <a class="nav-link {{ request()->routeIs('admin.products.bikes*') ? 'active' : '' }}" href="{{ route('admin.products.bikes') }}">Sepeda</a>
                                 <a class="nav-link {{ request()->routeIs('admin.products.gear*') ? 'active' : '' }}" href="{{ route('admin.products.gear') }}">Perlengkapan</a>
+                                <a class="nav-link {{ request()->routeIs('admin.spareparts.*') ? 'active' : '' }}" href="{{ route('admin.spareparts.index') }}">Sparepart VELOXIS</a>
                             </nav>
                         </div>
                         

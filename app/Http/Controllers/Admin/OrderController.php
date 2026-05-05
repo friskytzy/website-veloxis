@@ -15,10 +15,9 @@ class OrderController extends Controller
      */
     public function index()
     {
-        $orders = DB::table('orders')
-            ->select('orders.*', 'users.name as user_name')
-            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
-            ->orderBy('orders.created_at', 'desc')
+        $orders = Order::query()
+            ->with('user')
+            ->latest()
             ->paginate(20);
             
         return view('admin.orders.index', compact('orders'));
@@ -29,19 +28,13 @@ class OrderController extends Controller
      */
     public function show($id)
     {
-        $order = DB::table('orders')
-            ->select('orders.*', 'users.name as user_name', 'users.email as user_email')
-            ->leftJoin('users', 'orders.user_id', '=', 'users.id')
-            ->where('orders.id', $id)
-            ->first();
-            
+        $order = Order::with(['user', 'items'])->find($id);
+
         if (!$order) {
             abort(404);
         }
-        
-        $items = DB::table('order_items')
-            ->where('order_id', $order->id)
-            ->get();
+
+        $items = $order->items;
             
         return view('admin.orders.show', compact('order', 'items'));
     }

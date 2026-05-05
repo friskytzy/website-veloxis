@@ -10,6 +10,7 @@ use App\Models\Bike;
 use App\Models\Gear;
 use App\Models\News;
 use App\Models\Event;
+use App\Models\SparePart;
 
 class DashboardController extends Controller
 {
@@ -22,11 +23,13 @@ class DashboardController extends Controller
             'products' => [
                 'bikes' => Bike::count(),
                 'gear' => Gear::count(),
-                'total' => Bike::count() + Gear::count()
+                'spareparts' => SparePart::count(),
+                'total' => Bike::count() + Gear::count() + SparePart::count()
             ],
             'news' => News::count(),
             'events' => Event::count(),
-            'recent_orders' => Order::latest()->take(5)->get()
+            'recent_orders' => Order::with('user')->latest()->take(5)->get(),
+            'low_stock_spareparts' => SparePart::lowStock()->active()->orderBy('stock')->take(8)->get(),
         ];
         
         return view('admin.dashboard', compact('stats'));

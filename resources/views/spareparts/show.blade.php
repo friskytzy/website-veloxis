@@ -68,9 +68,9 @@
                 @csrf
                 <label for="quantity" class="mb-2 block font-bold text-slate-700">Quantity</label>
                 <div class="grid gap-3 sm:grid-cols-[112px_1fr_1fr]">
-                    <input id="quantity" name="quantity" type="number" min="1" max="10" value="1" class="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-veloxis-red focus:ring-4 focus:ring-red-100">
-                    <button class="rounded-2xl bg-veloxis-red px-6 py-4 font-black text-white hover:bg-red-700">Add to Cart</button>
-                    <button formaction="{{ route('veloxis.buy-now', $product['slug']) }}" class="rounded-2xl bg-veloxis-navy px-6 py-4 font-black text-white hover:bg-veloxis-dark">Buy Now</button>
+                    <input id="quantity" name="quantity" type="number" min="1" max="{{ min(10, $product['stock']) }}" value="1" class="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none focus:border-veloxis-red focus:ring-4 focus:ring-red-100">
+                    <button @disabled($product['stock'] < 1) class="rounded-2xl bg-veloxis-red px-6 py-4 font-black text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-300">Add to Cart</button>
+                    <button @disabled($product['stock'] < 1) formaction="{{ route('veloxis.buy-now', $product['slug']) }}" class="rounded-2xl bg-veloxis-navy px-6 py-4 font-black text-white hover:bg-veloxis-dark disabled:cursor-not-allowed disabled:bg-slate-300">Buy Now</button>
                 </div>
             </form>
 

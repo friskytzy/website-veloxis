@@ -24,9 +24,11 @@
                 <table class="table table-bordered" id="orders-table" width="100%" cellspacing="0">
                     <thead>
                         <tr>
-                            <th>Order ID</th>
+                            <th>Order</th>
                             <th>Customer</th>
                             <th>Total</th>
+                            <th>Payment</th>
+                            <th>Courier</th>
                             <th>Status</th>
                             <th>Date</th>
                             <th>Actions</th>
@@ -35,9 +37,20 @@
                     <tbody>
                         @forelse($orders as $order)
                             <tr>
-                                <td>#{{ $order->id }}</td>
-                                <td>{{ $order->user_name ?? 'Guest' }}</td>
+                                <td>{{ $order->order_number ?? '#'.$order->id }}</td>
+                                <td>
+                                    <div>{{ $order->customer_name ?? optional($order->user)->name ?? 'Guest' }}</div>
+                                    <small class="text-muted">{{ $order->email ?? optional($order->user)->email }}</small>
+                                </td>
                                 <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
+                                <td>
+                                    <div>{{ $order->payment_method ?? '-' }}</div>
+                                    <small class="text-muted">{{ $order->payment_status ?? '-' }}</small>
+                                </td>
+                                <td>
+                                    <div>{{ $order->courier ?? '-' }}</div>
+                                    <small class="text-muted">{{ $order->tracking_number ?? 'Belum ada resi' }}</small>
+                                </td>
                                 <td>
                                     @if($order->status == 'pending')
                                         <span class="badge bg-warning text-dark">Menunggu</span>
@@ -62,7 +75,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center">No orders found</td>
+                                <td colspan="8" class="text-center">No orders found</td>
                             </tr>
                         @endforelse
                     </tbody>

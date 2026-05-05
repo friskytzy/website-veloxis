@@ -2,9 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\InsufficientStockException;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\SparePart;
+use App\Support\OrderNumber;
 use App\Support\VeloxisCatalog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class SparepartController extends Controller
@@ -17,12 +23,14 @@ class SparepartController extends Controller
             $request->query('sort')
         );
 
+        $options = VeloxisCatalog::catalogOptions();
+
         return view('spareparts.index', [
             'products' => $products,
-            'brands' => VeloxisCatalog::motorBrands(),
-            'categories' => VeloxisCatalog::categories(),
-            'partBrands' => VeloxisCatalog::partBrands(),
-            'searchSuggestions' => collect(VeloxisCatalog::products())->pluck('name')->take(8),
+            'brands' => $options['brands'],
+            'categories' => $options['categories'],
+            'partBrands' => $options['partBrands'],
+            'searchSuggestions' => $options['searchSuggestions'],
         ]);
     }
 
@@ -32,7 +40,7 @@ class SparepartController extends Controller
 
         abort_if(!$product, 404);
 
-        $relatedProducts = collect(VeloxisCatalog::products())
+        $relatedProducts = collect(VeloxisCatalog::filteredProducts([]))
             ->filter(fn (array $item): bool => $item['slug'] !== $slug && ($item['category'] === $product['category'] || $item['motor_brand'] === $product['motor_brand']))
             ->take(4)
             ->values()
@@ -65,8 +73,17 @@ class SparepartController extends Controller
             'quantity' => ['nullable', 'integer', 'min:1', 'max:10'],
         ]);
 
+        $requestedQuantity = (int) ($validated['quantity'] ?? 1);
         $cart = session('veloxis_cart', []);
-        $cart[$slug] = min(($cart[$slug] ?? 0) + (int) ($validated['quantity'] ?? 1), 10);
+        $cart[$slug] = max(
+            $cart[$slug] ?? 0,
+            min(($cart[$slug] ?? 0) + $requestedQuantity, 10, $product['stock'])
+        );
+
+        if ($cart[$slug] < 1) {
+            unset($cart[$slug]);
+        }
+
         session(['veloxis_cart' => $cart]);
     }
 
@@ -74,7 +91,7 @@ class SparepartController extends Controller
     {
         $items = VeloxisCatalog::cartItems(session('veloxis_cart', []));
         $subtotal = VeloxisCatalog::cartSubtotal($items);
-        $shipping = $subtotal > 500000 || $subtotal === 0 ? 0 : 18000;
+        $shipping = $this->shippingCost($subtotal, 'JNE');
         $discount = $subtotal >= 750000 ? 50000 : 0;
 
         return view('spareparts.cart', [
@@ -97,7 +114,13 @@ class SparepartController extends Controller
         if ((int) $validated['quantity'] === 0) {
             unset($cart[$slug]);
         } else {
-            $cart[$slug] = (int) $validated['quantity'];
+            $product = VeloxisCatalog::findProduct($slug);
+            abort_if(!$product, 404);
+            $cart[$slug] = min((int) $validated['quantity'], $product['stock']);
+
+            if ($cart[$slug] < 1) {
+                unset($cart[$slug]);
+            }
         }
 
         session(['veloxis_cart' => $cart]);
@@ -109,7 +132,7 @@ class SparepartController extends Controller
     {
         $items = VeloxisCatalog::cartItems(session('veloxis_cart', []));
         $subtotal = VeloxisCatalog::cartSubtotal($items);
-        $shipping = $subtotal > 500000 || $subtotal === 0 ? 0 : 18000;
+        $shipping = $this->shippingCost($subtotal, old('courier', 'JNE'));
         $discount = $subtotal >= 750000 ? 50000 : 0;
 
         return view('spareparts.checkout', [
@@ -118,6 +141,8 @@ class SparepartController extends Controller
             'shipping' => $shipping,
             'discount' => $discount,
             'total' => max($subtotal + $shipping - $discount, 0),
+            'couriers' => $this->activeOptions((array) config('veloxis.couriers')),
+            'paymentMethods' => $this->activeOptions((array) config('veloxis.payments')),
         ]);
     }
 
@@ -125,19 +150,123 @@ class SparepartController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email', 'max:160'],
             'phone' => ['required', 'string', 'max:30'],
+            'city' => ['required', 'string', 'max:80'],
+            'postal_code' => ['nullable', 'string', 'max:20'],
             'address' => ['required', 'string', 'min:10', 'max:500'],
-            'courier' => ['required', 'in:JNE,J&T,SiCepat'],
-            'payment_method' => ['required', 'in:Transfer Bank,OVO,GoPay,DANA,COD'],
+            'courier' => ['required', 'in:'.implode(',', array_keys($this->activeOptions((array) config('veloxis.couriers'))))],
+            'payment_method' => ['required', 'in:'.implode(',', array_keys($this->activeOptions((array) config('veloxis.payments'))))],
+            'notes' => ['nullable', 'string', 'max:500'],
         ]);
+
+        $cart = session('veloxis_cart', []);
+        $items = VeloxisCatalog::cartItems($cart);
+
+        if (count($items) === 0) {
+            return redirect()->route('veloxis.cart')->withErrors(['cart' => 'Keranjang masih kosong.']);
+        }
+
+        if (!SparePart::active()->exists()) {
+            return redirect()->route('veloxis.cart')->withErrors([
+                'quantity' => 'Produk belum tersedia untuk checkout. Silakan hubungi admin VELOXIS.',
+            ]);
+        }
+
+        try {
+            $order = DB::transaction(function () use ($request, $items): Order {
+                $paymentMethod = $request->string('payment_method')->toString();
+                $paymentProvider = config('veloxis.payments.'.$paymentMethod.'.provider', 'manual');
+
+                $lockedParts = [];
+                $subtotal = 0;
+                foreach ($items as $item) {
+                    $part = SparePart::active()->where('slug', $item['slug'])->lockForUpdate()->first();
+                    if (!$part || $part->stock < $item['quantity']) {
+                        throw new InsufficientStockException("Stok {$item['name']} tidak mencukupi. Tersedia: ".($part ? $part->stock : 0));
+                    }
+
+                    $lockedParts[$item['slug']] = $part;
+                    $subtotal += $part->price * $item['quantity'];
+                }
+
+                $shipping = $this->shippingCost($subtotal, $request->string('courier')->toString());
+                $discount = $subtotal >= 750000 ? 50000 : 0;
+
+                $order = Order::create([
+                    'user_id' => auth()->id(),
+                    'order_number' => OrderNumber::generate(),
+                    'customer_name' => $request->string('name')->toString(),
+                    'total' => max($subtotal + $shipping - $discount, 0),
+                    'status' => 'pending',
+                    'address' => $request->string('address')->toString(),
+                    'city' => $request->string('city')->toString(),
+                    'postal_code' => $request->string('postal_code')->toString() ?: null,
+                    'phone' => $request->string('phone')->toString(),
+                    'email' => $request->string('email')->toString(),
+                    'courier' => $request->string('courier')->toString(),
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shipping,
+                    'discount' => $discount,
+                    'payment_method' => $paymentMethod,
+                    'payment_provider' => $paymentProvider,
+                    'payment_status' => $paymentMethod === 'COD' ? 'cod_pending' : 'waiting_payment',
+                    'notes' => $request->string('notes')->toString() ?: null,
+                ]);
+
+                foreach ($items as $item) {
+                    $part = $lockedParts[$item['slug']];
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $part->id,
+                        'product_type' => SparePart::class,
+                        'product_name' => $part->name,
+                        'quantity' => $item['quantity'],
+                        'price' => $part->price,
+                    ]);
+
+                    $part->decrement('stock', $item['quantity']);
+                }
+
+                return $order;
+            });
+        } catch (InsufficientStockException $exception) {
+            return redirect()->route('veloxis.cart')->withErrors([
+                'quantity' => $exception->getMessage(),
+            ]);
+        }
 
         session()->forget('veloxis_cart');
 
-        return redirect()->route('veloxis.order-confirmation')->with('success', 'Order demo berhasil dibuat. Tim Veloxis akan menghubungi Anda.');
+        session(['veloxis_last_order_id' => $order->id]);
+
+        return redirect()->route('veloxis.order-confirmation')->with('success', 'Order berhasil dibuat. Tim Veloxis akan menghubungi Anda untuk pembayaran dan pengiriman.');
     }
 
     public function confirmation(): View
     {
-        return view('spareparts.confirmation');
+        $order = null;
+        $orderId = session('veloxis_last_order_id');
+
+        if ($orderId) {
+            $order = Order::find($orderId);
+        }
+
+        return view('spareparts.confirmation', compact('order'));
+    }
+
+    private function shippingCost(int $subtotal, string $courier): int
+    {
+        if ($subtotal > 500000 || $subtotal === 0) {
+            return 0;
+        }
+
+        return (int) config('veloxis.couriers.'.$courier.'.base_cost', 18000);
+    }
+
+    private function activeOptions(array $options): array
+    {
+        return array_filter($options, fn (array $option): bool => $option['active'] ?? false);
     }
 }

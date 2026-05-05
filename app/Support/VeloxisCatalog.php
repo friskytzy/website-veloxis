@@ -2,6 +2,9 @@
 
 namespace App\Support;
 
+use App\Models\SparePart;
+use Illuminate\Support\Collection;
+
 class VeloxisCatalog
 {
     public static function motorBrands(): array
@@ -298,6 +301,16 @@ class VeloxisCatalog
 
     public static function findProduct(string $slug): ?array
     {
+        $databaseProduct = SparePart::active()->where('slug', $slug)->first();
+
+        if ($databaseProduct) {
+            return $databaseProduct->toCatalogArray();
+        }
+
+        if (SparePart::active()->exists()) {
+            return null;
+        }
+
         foreach (self::products() as $product) {
             if ($product['slug'] === $slug) {
                 return $product;
@@ -309,7 +322,9 @@ class VeloxisCatalog
 
     public static function filteredProducts(array $filters): array
     {
-        $products = self::products();
+        $products = SparePart::active()->exists()
+            ? SparePart::active()->get()->map(fn (SparePart $part): array => $part->toCatalogArray())->all()
+            : self::products();
 
         return array_values(array_filter($products, function (array $product) use ($filters): bool {
             $search = strtolower((string) ($filters['search'] ?? ''));
@@ -351,12 +366,19 @@ class VeloxisCatalog
     public static function sortProducts(array $products, ?string $sort): array
     {
         usort($products, function (array $first, array $second) use ($sort): int {
-            return match ($sort) {
-                'price_asc' => $first['price'] <=> $second['price'],
-                'rating' => $second['rating'] <=> $first['rating'],
-                'newest' => $second['id'] <=> $first['id'],
-                default => $second['review_count'] <=> $first['review_count'],
-            };
+            if ($sort === 'price_asc') {
+                return $first['price'] <=> $second['price'];
+            }
+
+            if ($sort === 'rating') {
+                return $second['rating'] <=> $first['rating'];
+            }
+
+            if ($sort === 'newest') {
+                return $second['id'] <=> $first['id'];
+            }
+
+            return $second['review_count'] <=> $first['review_count'];
         });
 
         return $products;
@@ -381,5 +403,49 @@ class VeloxisCatalog
     public static function cartSubtotal(array $items): int
     {
         return (int) array_sum(array_column($items, 'subtotal'));
+    }
+
+    public static function catalogOptions(): array
+    {
+        if (!SparePart::active()->exists()) {
+            return [
+                'brands' => self::motorBrands(),
+                'categories' => self::categories(),
+                'partBrands' => self::partBrands(),
+                'searchSuggestions' => collect(self::products())->pluck('name')->take(8),
+            ];
+        }
+
+        $parts = SparePart::active()->get();
+
+        return [
+            'brands' => self::brandModelOptions($parts),
+            'categories' => $parts->pluck('category')->unique()->sort()->values()->all(),
+            'partBrands' => $parts->pluck('part_brand')->unique()->sort()->values()->all(),
+            'searchSuggestions' => $parts->pluck('name')->take(8),
+        ];
+    }
+
+    private static function brandModelOptions(Collection $parts): array
+    {
+        $brands = [];
+
+        foreach ($parts->groupBy('motor_brand') as $brand => $brandParts) {
+            $brands[] = [
+                'name' => $brand,
+                'models' => $brandParts
+                    ->flatMap(fn (SparePart $part): array => $part->compatible_models ?? [])
+                    ->unique()
+                    ->sort()
+                    ->values()
+                    ->all(),
+            ];
+        }
+
+        usort($brands, function (array $first, array $second): int {
+            return $first['name'] <=> $second['name'];
+        });
+
+        return $brands;
     }
 }

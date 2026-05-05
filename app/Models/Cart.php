@@ -25,4 +25,13 @@ class Cart extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function getProductAttribute()
+    {
+        if ($this->product_type === 'bike' || $this->product_type === 'bikes') {
+            return Bike::find($this->product_id);
+        }
+
+        return Gear::find($this->product_id);
+    }
 }

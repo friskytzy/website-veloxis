@@ -19,7 +19,7 @@ class CartController extends Controller
         $total = 0;
         
         foreach ($cartItems as $item) {
-            if ($item->product_type === 'bikes') {
+            if ($item->product_type === 'bike' || $item->product_type === 'bikes') {
                 $product = Bike::find($item->product_id);
             } else {
                 $product = Gear::find($item->product_id);
