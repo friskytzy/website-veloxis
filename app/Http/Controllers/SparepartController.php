@@ -114,6 +114,10 @@ class SparepartController extends Controller
             $product = VeloxisCatalog::findProduct($slug);
             abort_if(!$product, 404);
             $cart[$slug] = min((int) $validated['quantity'], $product['stock']);
+
+            if ($cart[$slug] < 1) {
+                unset($cart[$slug]);
+            }
         }
 
         session(['veloxis_cart' => $cart]);
