@@ -15,11 +15,6 @@ class HomeController extends Controller
      */
     public function index()
     {
-        $featuredBikes = Bike::where('is_featured', true)->take(6)->get();
-        $featuredGear = Gear::where('is_featured', true)->take(4)->orderBy('created_at', 'desc')->get();
-        $latestNews = News::where('is_published', true)->latest()->take(3)->get();
-        $upcomingEvents = Event::where('start_date', '>=', now())->orderBy('start_date')->take(3)->get();
-
-        return view('home', compact('featuredBikes', 'featuredGear', 'latestNews', 'upcomingEvents'));
+        return view('home');
     }
 }

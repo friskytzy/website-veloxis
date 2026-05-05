@@ -1,157 +1,130 @@
 @extends('layouts.app')
 
-@section('title', 'Veloxis Legends - Ride the Freedom')
+@section('title', 'VELOXIS - Suku Cadang Motor, Asli & Terpercaya')
 
 @section('content')
-<!-- Hero Section -->
-<header class="relative bg-gray-900 pt-24 pb-32 overflow-hidden">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center md:items-start">
-        <div class="md:w-1/2 text-center md:text-left">
-            <h1 class="text-5xl md:text-6xl font-oswald font-bold leading-tight mb-6 tracking-wide">
-                Ride the Freedom
-                <br/>
-                <span class="text-red-600">Veloxis Legends</span>
-            </h1>
-            <p class="text-gray-300 text-lg md:text-xl mb-8 max-w-lg">
-                Discover the ultimate motorcycle experience. From classic cruisers to modern beasts, gear up and join the community of riders who live for the open road.
-            </p>
-            <a class="inline-block bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-8 rounded-lg shadow-lg transition duration-300" href="{{ route('products.bikes') }}">
-                Explore Bikes
-            </a>
-        </div>
-        <div class="md:w-1/2 mt-12 md:mt-0 flex justify-center">
-            <img alt="Motorcycle rider cruising on an open road at sunset with mountains in the background, warm orange and purple sky" class="rounded-xl shadow-2xl max-w-full h-auto" height="400" src="https://storage.googleapis.com/a1aa/image/8874ec7d-472e-49a5-a768-2169479ef098.jpg" width="600"/>
-        </div>
-    </div>
-    <svg class="absolute bottom-0 left-0 w-full" fill="none" viewbox="0 0 1440 320" xmlns="http://www.w3.org/2000/svg">
-        <path d="M0,224L48,197.3C96,171,192,117,288,117.3C384,117,480,171,576,197.3C672,224,768,224,864,197.3C960,171,1056,117,1152,117.3C1248,117,1344,171,1392,197.3L1440,224L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z" fill="#111827" fill-opacity="1"></path>
-    </svg>
-</header>
+@php
+    $brands = \App\Support\VeloxisCatalog::motorBrands();
+    $categories = \App\Support\VeloxisCatalog::categories();
+    $products = \App\Support\VeloxisCatalog::products();
+    $flashProducts = array_slice($products, 0, 4);
+@endphp
 
-<!-- Bikes Section -->
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20" id="bikes">
-    <h2 class="text-4xl font-oswald font-bold text-center mb-12 tracking-wide">Our Bikes</h2>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-        @foreach($featuredBikes as $bike)
-        <article class="bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-red-600 transition-shadow duration-300">
-            <img alt="{{ $bike->name }}" class="w-full h-48 object-cover" src="{{ asset('storage/' . $bike->image) }}"/>
-            <div class="p-6">
-                <h3 class="text-2xl font-oswald font-semibold mb-2">{{ $bike->name }}</h3>
-                <p class="text-gray-300 mb-4">{{ $bike->description }}</p>
-                <div class="flex justify-between items-center">
-                    <span class="text-red-600 font-bold text-xl">${{ number_format($bike->price, 2) }}</span>
-                    <a class="text-red-600 hover:text-red-700 font-semibold inline-flex items-center" href="{{ url('/products/bikes/' . $bike->id) }}">
-                        Learn More
-                        <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
+<section class="relative overflow-hidden bg-gradient-to-br from-veloxis-navy via-[#24476f] to-veloxis-dark text-white">
+    <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 20%, #F4A261 0, transparent 28%), radial-gradient(circle at 80% 10%, #E63946 0, transparent 26%);"></div>
+    <div class="relative mx-auto grid max-w-7xl gap-12 px-4 py-20 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:px-8 lg:py-28">
+        <div>
+            <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-sm font-bold text-veloxis-cream backdrop-blur">
+                <i class="fas fa-bolt text-veloxis-orange"></i> Search → Find → Buy dalam 3 klik
+            </div>
+            <h1 class="max-w-3xl text-5xl font-black leading-tight tracking-tight sm:text-6xl lg:text-7xl">Suku Cadang Motor, <span class="text-veloxis-orange">Asli</span> & Terpercaya</h1>
+            <p class="mt-6 max-w-2xl text-lg leading-8 text-slate-200">Cari sparepart berdasarkan merek dan model motor. VELOXIS membantu mekanik dan pemilik motor menemukan oli, ban, rem, rantai, aki, dan busi yang kompatibel.</p>
+            <div class="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a href="{{ route('veloxis.spareparts') }}" class="rounded-2xl bg-veloxis-red px-7 py-4 text-center font-black text-white shadow-xl shadow-red-950/30 transition hover:bg-red-700">Cari Sparepart Motor Anda</a>
+                <a href="#brand-selector" class="rounded-2xl border border-white/25 px-7 py-4 text-center font-black text-white transition hover:bg-white/10">Pilih Merek Motor</a>
+            </div>
+            <div class="mt-10 grid grid-cols-3 gap-4 max-w-xl">
+                <div class="rounded-2xl bg-white/10 p-4 backdrop-blur"><p class="text-3xl font-black">20+</p><p class="text-sm text-slate-300">Seed produk MVP</p></div>
+                <div class="rounded-2xl bg-white/10 p-4 backdrop-blur"><p class="text-3xl font-black">4.5</p><p class="text-sm text-slate-300">Rating optimal</p></div>
+                <div class="rounded-2xl bg-white/10 p-4 backdrop-blur"><p class="text-3xl font-black">30</p><p class="text-sm text-slate-300">Hari retur</p></div>
+            </div>
+        </div>
+        <div class="relative">
+            <div class="rounded-[2.5rem] border border-white/15 bg-white/10 p-4 shadow-2xl backdrop-blur">
+                <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1200&q=85" alt="Motor Indonesia dengan sparepart premium" class="h-[460px] w-full rounded-[2rem] object-cover">
+            </div>
+            <div class="absolute -bottom-7 left-6 right-6 rounded-3xl bg-white p-5 text-veloxis-dark shadow-2xl">
+                <p class="text-sm font-bold uppercase tracking-[0.2em] text-veloxis-red">Fitment-first search</p>
+                <div class="mt-3 flex flex-wrap gap-2 text-sm font-bold">
+                    <span class="rounded-full bg-veloxis-cream px-3 py-2">Honda Beat 2018-2023</span>
+                    <span class="rounded-full bg-veloxis-cream px-3 py-2">Yamaha NMax 2020+</span>
+                    <span class="rounded-full bg-veloxis-cream px-3 py-2">Kawasaki Ninja 250</span>
                 </div>
             </div>
-        </article>
+        </div>
+    </div>
+</section>
+
+<section id="brand-selector" class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <div class="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+            <p class="font-bold uppercase tracking-[0.25em] text-veloxis-red">Pilih motor Anda</p>
+            <h2 class="mt-2 text-3xl font-black text-veloxis-navy sm:text-4xl">Temukan part yang cocok</h2>
+        </div>
+        <a href="{{ route('veloxis.spareparts') }}" class="font-bold text-veloxis-red hover:text-red-700">Lihat semua sparepart →</a>
+    </div>
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach($brands as $brand)
+            <a href="{{ route('veloxis.spareparts', ['motor_brand' => $brand['name']]) }}" class="group rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:border-veloxis-red hover:shadow-xl">
+                <div class="mb-5 grid h-14 w-14 place-items-center rounded-2xl bg-veloxis-navy text-xl font-black text-white group-hover:bg-veloxis-red">{{ substr($brand['name'], 0, 1) }}</div>
+                <h3 class="text-2xl font-black text-veloxis-navy">{{ $brand['name'] }}</h3>
+                <p class="mt-2 text-sm text-slate-500">{{ implode(', ', $brand['models']) }}</p>
+            </a>
         @endforeach
     </div>
 </section>
 
-<!-- Gear Section -->
-<section class="bg-gray-800 py-20" id="gear">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-4xl font-oswald font-bold text-center mb-12 tracking-wide text-white">Gear Up</h2>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
-            @foreach($featuredGear as $gear)
-            <div class="bg-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-red-600 transition-shadow duration-300 flex flex-col items-center p-6">
-                <img alt="{{ $gear->name }}" class="w-40 h-40 object-cover rounded-lg mb-4" src="{{ asset('storage/' . $gear->image) }}"/>
-                <h3 class="text-xl font-oswald font-semibold mb-2 text-center">{{ $gear->name }}</h3>
-                <p class="text-gray-400 text-center mb-4">{{ $gear->description }}</p>
-                <div class="flex justify-between items-center w-full">
-                    <span class="text-red-600 font-bold">${{ number_format($gear->price, 2) }}</span>
-                    <a class="text-red-600 hover:text-red-700 font-semibold inline-flex items-center" href="{{ url('/products/gear/' . $gear->id) }}">
-                        Shop Now
-                        <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
-                </div>
-            </div>
+<section class="bg-white py-16">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="mb-8 text-center">
+            <p class="font-bold uppercase tracking-[0.25em] text-veloxis-red">Kategori populer</p>
+            <h2 class="mt-2 text-3xl font-black text-veloxis-navy sm:text-4xl">Belanja kebutuhan servis rutin</h2>
+        </div>
+        <div class="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
+            @foreach($categories as $category)
+                <a href="{{ route('veloxis.spareparts', ['category' => $category]) }}" class="rounded-3xl bg-veloxis-cream p-5 text-center font-black text-veloxis-navy transition hover:bg-veloxis-red hover:text-white">
+                    <i class="fas fa-{{ ['Oli' => 'oil-can', 'Ban' => 'circle-notch', 'Kampas Rem' => 'stop-circle', 'Rantai & Gear' => 'cogs', 'Aki' => 'car-battery', 'Busi' => 'bolt'][$category] }} mb-3 block text-3xl"></i>
+                    {{ $category }}
+                </a>
             @endforeach
         </div>
     </div>
 </section>
 
-<!-- Community Section -->
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20" id="community">
-    <h2 class="text-4xl font-oswald font-bold text-center mb-12 tracking-wide">Join the Community</h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
-        <div class="bg-gray-800 rounded-xl shadow-lg p-8 flex flex-col items-center text-center hover:shadow-red-600 transition-shadow duration-300">
-            <img alt="Group of motorcyclists riding together on a scenic highway with mountains and blue sky" class="rounded-full mb-6 w-36 h-36 object-cover" src="https://storage.googleapis.com/a1aa/image/d12cb247-0d44-45e2-2619-aa1c3c00f5fe.jpg"/>
-            <h3 class="text-2xl font-oswald font-semibold mb-3">Rides & Events</h3>
-            <p class="text-gray-300 mb-4">Join our monthly rides and meet fellow riders who share your passion.</p>
-            <a class="text-red-600 hover:text-red-700 font-semibold inline-flex items-center" href="{{ route('events.index') }}">
-                See Upcoming Events
-                <i class="fas fa-arrow-right ml-2"></i>
-            </a>
+<section class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+    <div class="mb-8 flex items-end justify-between gap-4">
+        <div>
+            <p class="font-bold uppercase tracking-[0.25em] text-veloxis-red">Flash sale</p>
+            <h2 class="mt-2 text-3xl font-black text-veloxis-navy sm:text-4xl">Promo cepat untuk part favorit</h2>
         </div>
-        <div class="bg-gray-800 rounded-xl shadow-lg p-8 flex flex-col items-center text-center hover:shadow-red-600 transition-shadow duration-300">
-            <img alt="Motorcycle mechanic working on a bike in a well-equipped garage with tools and parts" class="rounded-full mb-6 w-36 h-36 object-cover" src="https://storage.googleapis.com/a1aa/image/98ce8684-c85b-4fd0-2b56-b01af7483b56.jpg"/>
-            <h3 class="text-2xl font-oswald font-semibold mb-3">Workshops</h3>
-            <p class="text-gray-300 mb-4">Learn maintenance, customization, and repair skills from the pros.</p>
-            <a class="text-red-600 hover:text-red-700 font-semibold inline-flex items-center" href="{{ route('events.index') }}">
-                Join a Workshop
-                <i class="fas fa-arrow-right ml-2"></i>
-            </a>
-        </div>
-        <div class="bg-gray-800 rounded-xl shadow-lg p-8 flex flex-col items-center text-center hover:shadow-red-600 transition-shadow duration-300">
-            <img alt="Close-up of hands typing on laptop keyboard with motorcycle forum website on screen" class="rounded-full mb-6 w-36 h-36 object-cover" src="https://storage.googleapis.com/a1aa/image/d453342e-efab-46db-3a98-ae9702955dbd.jpg"/>
-            <h3 class="text-2xl font-oswald font-semibold mb-3">Online Forum</h3>
-            <p class="text-gray-300 mb-4">Connect, share stories, and get advice from riders worldwide.</p>
-            <a class="text-red-600 hover:text-red-700 font-semibold inline-flex items-center" href="#">
-                Visit the Forum
-                <i class="fas fa-arrow-right ml-2"></i>
-            </a>
-        </div>
+        <div class="hidden rounded-2xl bg-veloxis-orange px-5 py-3 font-black text-veloxis-dark sm:block">Hemat sampai Rp50.000</div>
     </div>
-</section>
-
-<!-- News Section -->
-<section class="bg-gray-800 py-20" id="news">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 class="text-4xl font-oswald font-bold text-center mb-12 tracking-wide text-white">Latest News</h2>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
-            @foreach($latestNews as $news)
-            <article class="bg-gray-900 rounded-xl shadow-lg overflow-hidden hover:shadow-red-600 transition-shadow duration-300">
-                <img alt="{{ $news->title }}" class="w-full h-48 object-cover" src="{{ asset('storage/' . $news->image) }}"/>
-                <div class="p-6">
-                    <h3 class="text-2xl font-oswald font-semibold mb-2">{{ $news->title }}</h3>
-                    <p class="text-gray-400 mb-4">{{ Str::limit($news->content, 100) }}</p>
-                    <a class="text-red-600 hover:text-red-700 font-semibold inline-flex items-center" href="{{ route('news.show', $news->id) }}">
-                        Read More
-                        <i class="fas fa-arrow-right ml-2"></i>
-                    </a>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        @foreach($flashProducts as $product)
+            <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-xl">
+                <div class="relative h-52 overflow-hidden">
+                    <img src="{{ $product['image'] }}" alt="{{ $product['name'] }}" class="h-full w-full object-cover transition duration-500 hover:scale-110">
+                    <span class="absolute left-4 top-4 rounded-full bg-veloxis-red px-3 py-1 text-xs font-black text-white">{{ $product['badge'] }}</span>
+                </div>
+                <div class="p-5">
+                    <p class="text-xs font-bold uppercase tracking-[0.2em] text-slate-400">{{ $product['category'] }} · {{ $product['motor_brand'] }}</p>
+                    <h3 class="mt-2 min-h-[3.5rem] text-lg font-black text-veloxis-navy">{{ $product['name'] }}</h3>
+                    <div class="mt-3 flex items-center justify-between">
+                        <span class="text-xl font-black text-veloxis-red">Rp {{ number_format($product['price'], 0, ',', '.') }}</span>
+                        <span class="text-sm font-bold text-amber-500"><i class="fas fa-star"></i> {{ $product['rating'] }}</span>
+                    </div>
+                    <a href="{{ route('veloxis.spareparts.show', $product['slug']) }}" class="mt-5 block rounded-2xl bg-veloxis-navy px-4 py-3 text-center font-black text-white hover:bg-veloxis-red">Lihat Detail</a>
                 </div>
             </article>
+        @endforeach
+    </div>
+</section>
+
+<section class="bg-veloxis-navy py-16 text-white">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="grid gap-6 lg:grid-cols-3">
+            @foreach([
+                ['Budi Mekanik', 'Part cepat sampai, harga transparan, dan cocok untuk order bengkel. Filter model motornya bikin kerja lebih cepat.'],
+                ['Diana Pemilik Motor', 'Saya tidak takut salah beli karena ada info cocok untuk Beat dan badge genuine. Checkout-nya juga simpel.'],
+                ['Raka Parts Specialist', 'VELOXIS siap jadi fondasi marketplace sparepart lokal dengan review mekanik dan fitment checker.'],
+            ] as $review)
+                <figure class="rounded-3xl border border-white/10 bg-white/10 p-6 backdrop-blur">
+                    <div class="mb-4 text-veloxis-orange"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star-half-alt"></i></div>
+                    <blockquote class="leading-7 text-slate-100">“{{ $review[1] }}”</blockquote>
+                    <figcaption class="mt-5 font-black">{{ $review[0] }}</figcaption>
+                </figure>
             @endforeach
         </div>
     </div>
 </section>
-
-<!-- Contact Section -->
-<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20" id="contact">
-    <h2 class="text-4xl font-oswald font-bold text-center mb-12 tracking-wide">Get in Touch</h2>
-    <div class="max-w-3xl mx-auto bg-gray-800 rounded-xl shadow-lg p-10">
-        <form action="{{ route('contact.store') }}" method="POST" class="space-y-8">
-            @csrf
-            <div>
-                <label class="block text-gray-300 font-semibold mb-2" for="name">Name</label>
-                <input class="w-full rounded-md bg-gray-700 border border-gray-600 text-gray-100 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-600" id="name" name="name" placeholder="Your full name" required type="text"/>
-            </div>
-            <div>
-                <label class="block text-gray-300 font-semibold mb-2" for="email">Email</label>
-                <input class="w-full rounded-md bg-gray-700 border border-gray-600 text-gray-100 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-600" id="email" name="email" placeholder="you@example.com" required type="email"/>
-            </div>
-            <div>
-                <label class="block text-gray-300 font-semibold mb-2" for="message">Message</label>
-                <textarea class="w-full rounded-md bg-gray-700 border border-gray-600 text-gray-100 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-red-600" id="message" name="message" placeholder="Write your message here..." required rows="5"></textarea>
-            </div>
-            <button class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-4 rounded-lg shadow-lg transition duration-300" type="submit">
-                Send Message
-            </button>
-        </form>
-    </div>
-</section>
-@endsection 
+@endsection
