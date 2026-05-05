@@ -41,7 +41,7 @@ Route::get('/keranjang', [SparepartController::class, 'cart'])->name('veloxis.ca
 Route::put('/keranjang/{slug}', [SparepartController::class, 'updateCart'])->name('veloxis.cart.update');
 Route::get('/checkout', [SparepartController::class, 'checkout'])->name('veloxis.checkout');
 Route::post('/checkout', [SparepartController::class, 'placeOrder'])->name('veloxis.order.place');
-Route::get('/order-confirmation/{order?}', [SparepartController::class, 'confirmation'])->name('veloxis.order-confirmation');
+Route::get('/order-confirmation', [SparepartController::class, 'confirmation'])->name('veloxis.order-confirmation');
 Route::redirect('/kategori/{category}', '/sparepart');
 Route::redirect('/merek/{brand}', '/sparepart');
 

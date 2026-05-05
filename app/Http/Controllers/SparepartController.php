@@ -159,20 +159,25 @@ class SparepartController extends Controller
             return redirect()->route('veloxis.cart')->with('success', 'Keranjang masih kosong.');
         }
 
-        foreach ($items as $item) {
-            if ($item['stock'] < $item['quantity']) {
-                return redirect()->route('veloxis.cart')->withErrors([
-                    'quantity' => "Stok {$item['name']} tidak mencukupi. Tersedia: {$item['stock']}",
-                ]);
-            }
-        }
-
-        $order = DB::transaction(function () use ($request, $items): Order {
+        $stockError = null;
+        $order = DB::transaction(function () use ($request, $items, &$stockError): ?Order {
             $subtotal = VeloxisCatalog::cartSubtotal($items);
             $shipping = $this->shippingCost($subtotal, $request->string('courier')->toString());
             $discount = $subtotal >= 750000 ? 50000 : 0;
             $paymentMethod = $request->string('payment_method')->toString();
             $paymentProvider = config('veloxis.payments.'.$paymentMethod.'.provider', 'manual');
+
+            $lockedParts = [];
+            foreach ($items as $item) {
+                $part = SparePart::where('id', $item['id'])->lockForUpdate()->first();
+                if (!$part || $part->stock < $item['quantity']) {
+                    $stockError = "Stok {$item['name']} tidak mencukupi. Tersedia: ".($part ? $part->stock : 0);
+
+                    return null;
+                }
+
+                $lockedParts[$item['id']] = $part;
+            }
 
             $order = Order::create([
                 'user_id' => auth()->id(),
@@ -196,28 +201,45 @@ class SparepartController extends Controller
             ]);
 
             foreach ($items as $item) {
+                $part = $lockedParts[$item['id']];
+
                 OrderItem::create([
                     'order_id' => $order->id,
-                    'product_id' => $item['id'],
+                    'product_id' => $part->id,
                     'product_type' => SparePart::class,
-                    'product_name' => $item['name'],
+                    'product_name' => $part->name,
                     'quantity' => $item['quantity'],
-                    'price' => $item['price'],
+                    'price' => $part->price,
                 ]);
 
-                SparePart::where('id', $item['id'])->decrement('stock', $item['quantity']);
+                $part->decrement('stock', $item['quantity']);
             }
 
             return $order;
         });
 
+        if (!$order) {
+            return redirect()->route('veloxis.cart')->withErrors([
+                'quantity' => $stockError ?? 'Stok produk tidak mencukupi.',
+            ]);
+        }
+
         session()->forget('veloxis_cart');
 
-        return redirect()->route('veloxis.order-confirmation', $order)->with('success', 'Order berhasil dibuat. Tim Veloxis akan menghubungi Anda untuk pembayaran dan pengiriman.');
+        session(['veloxis_last_order_id' => $order->id]);
+
+        return redirect()->route('veloxis.order-confirmation')->with('success', 'Order berhasil dibuat. Tim Veloxis akan menghubungi Anda untuk pembayaran dan pengiriman.');
     }
 
-    public function confirmation(?Order $order = null): View
+    public function confirmation(): View
     {
+        $order = null;
+        $orderId = session('veloxis_last_order_id');
+
+        if ($orderId) {
+            $order = Order::find($orderId);
+        }
+
         return view('spareparts.confirmation', compact('order'));
     }
 

@@ -81,6 +81,7 @@ class OrderController extends Controller
                 'user_id' => $userId,
                 'order_number' => OrderNumber::generate(),
                 'total' => $total,
+                'subtotal' => $total,
                 'status' => 'pending',
                 'address' => $validated['shipping_address'],
                 'phone' => $validated['shipping_phone'],
