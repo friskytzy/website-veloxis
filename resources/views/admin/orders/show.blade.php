@@ -82,18 +82,23 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label class="fw-bold">Order Number:</label>
+                        <div>{{ $order->order_number ?? '#'.$order->id }}</div>
+                    </div>
+
+                    <div class="mb-3">
                         <label class="fw-bold">Order Date:</label>
                         <div>{{ \Carbon\Carbon::parse($order->created_at)->format('d/m/Y H:i') }}</div>
                     </div>
                     
                     <div class="mb-3">
                         <label class="fw-bold">Customer:</label>
-                        <div>{{ $order->user_name ?? 'Guest' }}</div>
+                        <div>{{ $order->customer_name ?? optional($order->user)->name ?? 'Guest' }}</div>
                     </div>
                     
                     <div class="mb-3">
                         <label class="fw-bold">Email:</label>
-                        <div>{{ $order->user_email ?? $order->email ?? '-' }}</div>
+                        <div>{{ $order->email ?? optional($order->user)->email ?? '-' }}</div>
                     </div>
                     
                     <div class="mb-3">
@@ -111,6 +116,18 @@
                         </div>
                     </div>
                     
+                    <div class="mb-3">
+                        <label class="fw-bold">Payment:</label>
+                        <div>{{ $order->payment_method ?? '-' }} · {{ strtoupper($order->payment_provider ?? 'manual') }}</div>
+                        <small class="text-muted">{{ $order->payment_status ?? '-' }}</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="fw-bold">Courier:</label>
+                        <div>{{ $order->courier ?? '-' }}</div>
+                        <small class="text-muted">Resi: {{ $order->tracking_number ?? 'Belum ada' }}</small>
+                    </div>
+
                     <div class="mb-3">
                         <label class="fw-bold">Notes:</label>
                         <div>{{ $order->notes ?? 'None' }}</div>

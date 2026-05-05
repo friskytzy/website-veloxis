@@ -32,7 +32,7 @@
                                 <form action="{{ route('veloxis.cart.update', $item['slug']) }}" method="POST" class="flex items-center gap-2 sm:justify-end">
                                     @csrf
                                     @method('PUT')
-                                    <input name="quantity" type="number" min="0" max="10" value="{{ $item['quantity'] }}" class="w-20 rounded-xl border border-slate-200 px-3 py-2 text-center font-bold">
+                                    <input name="quantity" type="number" min="0" max="{{ min(10, $item['stock']) }}" value="{{ $item['quantity'] }}" class="w-20 rounded-xl border border-slate-200 px-3 py-2 text-center font-bold">
                                     <button class="rounded-xl bg-veloxis-navy px-3 py-2 text-sm font-bold text-white">Update</button>
                                 </form>
                                 <p class="mt-3 font-black text-veloxis-navy">Subtotal Rp {{ number_format($item['subtotal'], 0, ',', '.') }}</p>

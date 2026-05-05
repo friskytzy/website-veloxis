@@ -27,7 +27,7 @@ class OrderController extends Controller
         $items = [];
         
         foreach ($cartItems as $item) {
-            if ($item->product_type === 'bikes') {
+            if ($item->product_type === 'bike' || $item->product_type === 'bikes') {
                 $product = Bike::find($item->product_id);
             } else {
                 $product = Gear::find($item->product_id);
@@ -43,7 +43,11 @@ class OrderController extends Controller
             }
         }
         
-        return view('orders.checkout', compact('items', 'total'));
+        return view('orders.checkout', [
+            'cartItems' => $cartItems,
+            'items' => $items,
+            'total' => $total,
+        ]);
     }
 
     /**
@@ -73,12 +77,15 @@ class OrderController extends Controller
         // Create order
         $order = Order::create([
             'user_id' => $userId,
-            'total_amount' => $total,
+            'order_number' => 'VLX-'.now()->format('Ymd').'-'.str_pad((string) (Order::count() + 1), 5, '0', STR_PAD_LEFT),
+            'total' => $total,
             'status' => 'pending',
-            'shipping_address' => $validated['shipping_address'],
-            'shipping_phone' => $validated['shipping_phone'],
-            'shipping_name' => $validated['shipping_name'],
+            'address' => $validated['shipping_address'],
+            'phone' => $validated['shipping_phone'],
+            'customer_name' => $validated['shipping_name'],
             'payment_method' => $validated['payment_method'],
+            'payment_provider' => 'manual',
+            'payment_status' => $validated['payment_method'] === 'cod' ? 'cod_pending' : 'waiting_payment',
             'notes' => $validated['notes'] ?? null,
         ]);
 
@@ -95,6 +102,7 @@ class OrderController extends Controller
                     'order_id' => $order->id,
                     'product_id' => $item['product_id'],
                     'product_type' => $item['product_type'],
+                    'product_name' => $product->name,
                     'quantity' => $item['quantity'],
                     'price' => $product->price,
                 ]);
@@ -118,7 +126,7 @@ class OrderController extends Controller
     public function history()
     {
         $orders = Order::where('user_id', auth()->id())
-                      ->with('orderItems')
+                      ->with('items')
                       ->latest()
                       ->paginate(10);
         
@@ -135,7 +143,7 @@ class OrderController extends Controller
             abort(403);
         }
         
-        $order->load('orderItems');
+        $order->load('items');
         
         return view('orders.show', compact('order'));
     }

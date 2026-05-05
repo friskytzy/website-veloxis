@@ -187,6 +187,7 @@
                             <nav class="sb-sidenav-menu-nested nav">
                                 <a class="nav-link {{ request()->routeIs('admin.products.bikes*') ? 'active' : '' }}" href="{{ route('admin.products.bikes') }}">Sepeda</a>
                                 <a class="nav-link {{ request()->routeIs('admin.products.gear*') ? 'active' : '' }}" href="{{ route('admin.products.gear') }}">Perlengkapan</a>
+                                <a class="nav-link {{ request()->routeIs('admin.spareparts.*') ? 'active' : '' }}" href="{{ route('admin.spareparts.index') }}">Sparepart VELOXIS</a>
                             </nav>
                         </div>
                         

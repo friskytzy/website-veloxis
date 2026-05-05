@@ -107,7 +107,7 @@
                         <div class="mt-5 flex gap-2">
                             <form action="{{ route('veloxis.cart.add', $product['slug']) }}" method="POST" class="flex-1">
                                 @csrf
-                                <button class="w-full rounded-2xl bg-veloxis-red px-4 py-3 text-sm font-black text-white hover:bg-red-700">Add to cart</button>
+                                <button @disabled($product['stock'] < 1) class="w-full rounded-2xl bg-veloxis-red px-4 py-3 text-sm font-black text-white hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-slate-300">Add to cart</button>
                             </form>
                             <a href="{{ route('veloxis.spareparts.show', $product['slug']) }}" class="rounded-2xl border border-slate-200 px-4 py-3 text-sm font-black text-veloxis-navy hover:border-veloxis-red hover:text-veloxis-red">Detail</a>
                         </div>

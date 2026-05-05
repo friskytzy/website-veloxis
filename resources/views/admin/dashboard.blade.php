@@ -103,8 +103,8 @@
                             <tbody>
                                 @forelse($stats['recent_orders'] as $order)
                                     <tr>
-                                        <td>{{ $order->id }}</td>
-                                        <td>{{ $order->user->name ?? 'Guest' }}</td>
+                                        <td>{{ $order->order_number ?? $order->id }}</td>
+                                        <td>{{ $order->customer_name ?? $order->user->name ?? 'Guest' }}</td>
                                         <td>Rp {{ number_format($order->total, 0, ',', '.') }}</td>
                                         <td>
                                             @if($order->status == 'pending')
@@ -161,6 +161,10 @@
                         <div class="fw-bold">{{ $stats['products']['gear'] }}</div>
                     </div>
                     <div class="d-flex justify-content-between border-bottom mb-3 pb-2">
+                        <div>Sparepart VELOXIS</div>
+                        <div class="fw-bold">{{ $stats['products']['spareparts'] }}</div>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom mb-3 pb-2">
                         <div>Berita</div>
                         <div class="fw-bold">{{ $stats['news'] }}</div>
                     </div>
@@ -176,6 +180,28 @@
                     <a href="{{ route('admin.products.gear') }}" class="btn btn-secondary btn-sm">
                         Kelola Perlengkapan
                     </a>
+                    <a href="{{ route('admin.spareparts.index') }}" class="btn btn-success btn-sm">
+                        Kelola Sparepart
+                    </a>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    Stok Sparepart Rendah
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        @forelse($stats['low_stock_spareparts'] as $part)
+                            <a href="{{ route('admin.spareparts.edit', $part) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                <span>{{ $part->name }}</span>
+                                <span class="badge bg-danger">{{ $part->stock }}</span>
+                            </a>
+                        @empty
+                            <div class="list-group-item text-muted">Tidak ada stok rendah.</div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
             
@@ -192,6 +218,10 @@
                         </a>
                         <a href="{{ route('admin.products.gear.create') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div><i class="fas fa-tools me-2"></i> Tambah Perlengkapan Baru</div>
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                        <a href="{{ route('admin.spareparts.create') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div><i class="fas fa-cogs me-2"></i> Tambah Sparepart Baru</div>
                             <i class="fas fa-chevron-right"></i>
                         </a>
                         <a href="{{ route('admin.news.create') }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">

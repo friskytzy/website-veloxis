@@ -14,6 +14,7 @@ use App\Http\Controllers\SparepartController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\SparePartController as AdminSparePartController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\NewsController as AdminNewsController;
 use App\Http\Controllers\Admin\EventController as AdminEventController;
@@ -40,7 +41,7 @@ Route::get('/keranjang', [SparepartController::class, 'cart'])->name('veloxis.ca
 Route::put('/keranjang/{slug}', [SparepartController::class, 'updateCart'])->name('veloxis.cart.update');
 Route::get('/checkout', [SparepartController::class, 'checkout'])->name('veloxis.checkout');
 Route::post('/checkout', [SparepartController::class, 'placeOrder'])->name('veloxis.order.place');
-Route::get('/order-confirmation', [SparepartController::class, 'confirmation'])->name('veloxis.order-confirmation');
+Route::get('/order-confirmation/{order?}', [SparepartController::class, 'confirmation'])->name('veloxis.order-confirmation');
 Route::redirect('/kategori/{category}', '/sparepart');
 Route::redirect('/merek/{brand}', '/sparepart');
 
@@ -50,17 +51,17 @@ Route::get('/setup-admin', function () {
     if (!app()->environment('local')) {
         abort(404);
     }
-    
+
     $user = auth()->user();
-    
+
     if (!$user) {
         return redirect()->route('login')
             ->with('error', 'Anda harus login terlebih dahulu untuk mengakses halaman ini.');
     }
-    
+
     $user->is_admin = 1;
     $user->save();
-    
+
     return "Selamat! Akun " . $user->email . " telah menjadi admin. <a href='/admin'>Buka Admin Panel</a>";
 });
 
@@ -87,7 +88,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/history', [OrderController::class, 'history'])->name('history');
         Route::get('/{order}', [OrderController::class, 'show'])->name('show');
     });
-    
+
     // Profile Routes
     Route::prefix('profile')->name('profile.')->group(function () {
         Route::get('/edit', [ProfileController::class, 'edit'])->name('edit');
@@ -118,7 +119,7 @@ Route::prefix('contact')->name('contact.')->group(function () {
 // Admin Routes
 Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin', 'as' => 'admin.'], function () {
     Route::get('/', [DashboardController::class, 'index'])->name('dashboard');
-    
+
     // Product Management
     Route::prefix('products')->name('products.')->group(function () {
         Route::get('/bikes', [AdminProductController::class, 'bikes'])->name('bikes');
@@ -134,14 +135,18 @@ Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin', 'as' => 'a
         Route::put('/gear/{gear}', [AdminProductController::class, 'updateGear'])->name('gear.update');
         Route::delete('/gear/{gear}', [AdminProductController::class, 'destroyGear'])->name('gear.destroy');
     });
-    
+
+    Route::resource('spareparts', AdminSparePartController::class)
+        ->parameters(['spareparts' => 'sparePart'])
+        ->except(['show']);
+
     // Order Management
     Route::prefix('orders')->name('orders.')->group(function () {
         Route::get('/', [AdminOrderController::class, 'index'])->name('index');
         Route::get('/{order}', [AdminOrderController::class, 'show'])->name('show');
         Route::put('/{order}/status', [AdminOrderController::class, 'updateStatus'])->name('update-status');
     });
-    
+
     // User Management
     Route::prefix('users')->name('users.')->group(function () {
         Route::get('/', [UserController::class, 'index'])->name('index');
@@ -149,7 +154,7 @@ Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin', 'as' => 'a
         Route::put('/{user}', [UserController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
     });
-    
+
     // News Management
     Route::prefix('news')->name('news.')->group(function () {
         Route::get('/', [AdminNewsController::class, 'index'])->name('index');
@@ -159,7 +164,7 @@ Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin', 'as' => 'a
         Route::put('/{news}', [AdminNewsController::class, 'update'])->name('update');
         Route::delete('/{news}', [AdminNewsController::class, 'destroy'])->name('destroy');
     });
-    
+
     // Event Management
     Route::prefix('events')->name('events.')->group(function () {
         Route::get('/', [AdminEventController::class, 'index'])->name('index');
@@ -169,7 +174,7 @@ Route::group(['middleware' => ['auth', 'admin'], 'prefix' => 'admin', 'as' => 'a
         Route::put('/{event}', [AdminEventController::class, 'update'])->name('update');
         Route::delete('/{event}', [AdminEventController::class, 'destroy'])->name('destroy');
     });
-    
+
     // Category Management
     Route::prefix('categories')->name('categories.')->group(function () {
         Route::get('/', [AdminCategoryController::class, 'index'])->name('index');

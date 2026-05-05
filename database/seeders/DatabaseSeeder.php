@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             CategorySeeder::class,
             BikeSeeder::class,
             GearSeeder::class,
+            SparePartSeeder::class,
             NewsSeeder::class,
             EventSeeder::class,
         ]);
