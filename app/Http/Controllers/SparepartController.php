@@ -159,25 +159,33 @@ class SparepartController extends Controller
             return redirect()->route('veloxis.cart')->with('success', 'Keranjang masih kosong.');
         }
 
+        if (!SparePart::active()->exists()) {
+            return redirect()->route('veloxis.cart')->withErrors([
+                'quantity' => 'Produk belum tersedia untuk checkout. Silakan hubungi admin VELOXIS.',
+            ]);
+        }
+
         $stockError = null;
         $order = DB::transaction(function () use ($request, $items, &$stockError): ?Order {
-            $subtotal = VeloxisCatalog::cartSubtotal($items);
-            $shipping = $this->shippingCost($subtotal, $request->string('courier')->toString());
-            $discount = $subtotal >= 750000 ? 50000 : 0;
             $paymentMethod = $request->string('payment_method')->toString();
             $paymentProvider = config('veloxis.payments.'.$paymentMethod.'.provider', 'manual');
 
             $lockedParts = [];
+            $subtotal = 0;
             foreach ($items as $item) {
-                $part = SparePart::where('id', $item['id'])->lockForUpdate()->first();
+                $part = SparePart::active()->where('slug', $item['slug'])->lockForUpdate()->first();
                 if (!$part || $part->stock < $item['quantity']) {
                     $stockError = "Stok {$item['name']} tidak mencukupi. Tersedia: ".($part ? $part->stock : 0);
 
                     return null;
                 }
 
-                $lockedParts[$item['id']] = $part;
+                $lockedParts[$item['slug']] = $part;
+                $subtotal += $part->price * $item['quantity'];
             }
+
+            $shipping = $this->shippingCost($subtotal, $request->string('courier')->toString());
+            $discount = $subtotal >= 750000 ? 50000 : 0;
 
             $order = Order::create([
                 'user_id' => auth()->id(),
@@ -201,7 +209,7 @@ class SparepartController extends Controller
             ]);
 
             foreach ($items as $item) {
-                $part = $lockedParts[$item['id']];
+                $part = $lockedParts[$item['slug']];
 
                 OrderItem::create([
                     'order_id' => $order->id,
