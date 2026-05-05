@@ -307,6 +307,10 @@ class VeloxisCatalog
             return $databaseProduct->toCatalogArray();
         }
 
+        if (SparePart::active()->exists()) {
+            return null;
+        }
+
         foreach (self::products() as $product) {
             if ($product['slug'] === $slug) {
                 return $product;
